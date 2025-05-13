@@ -1,0 +1,508 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Артем Кияшко - Портфолио</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Roboto', sans-serif;
+        }
+
+        body {
+            scroll-behavior: smooth;
+            background: #f5f5f5;
+        }
+
+        /* Шапка */
+        header {
+            position: fixed;
+            width: 100%;
+            top: 0;
+            background: #fff;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+        }
+
+        nav {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .logo {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #333;
+        }
+
+        nav ul {
+            list-style: none;
+            display: flex;
+        }
+
+        nav ul li {
+            margin-left: 30px;
+        }
+
+        nav ul li a {
+            text-decoration: none;
+            color: #333;
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+
+        nav ul li a:hover {
+            color: #007bff;
+        }
+
+        /* Главная секция */
+        #hero {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            /* КАРТИНКА ДЛЯ ГЛАВНОЙ СЕКЦИИ */
+            background: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url('me.jpg') center/cover;
+            color: #fff;
+        }
+
+        #hero h1 {
+            font-size: 3em;
+            margin-bottom: 20px;
+        }
+
+        #hero p {
+            font-size: 1.2em;
+            margin-bottom: 30px;
+            max-width: 600px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            background: #007bff;
+            color: #fff;
+            text-decoration: none;
+            border-radius: 5px;
+            transition: background 0.3s;
+        }
+
+        .btn:hover {
+            background: #0056b3;
+        }
+
+        /* Секция портфолио (слайдер для грамот) */
+        #portfolio {
+            padding: 80px 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        #portfolio h2 {
+            font-size: 2.5em;
+            margin-bottom: 40px;
+            color: #333;
+        }
+
+        .slider {
+            position: relative;
+            max-width: 800px;
+            margin: 0 auto;
+            overflow: hidden;
+        }
+
+        .slides {
+            display: flex;
+            transition: transform 0.5s ease-in-out;
+        }
+
+        .slide {
+            min-width: 100%;
+            box-sizing: border-box;
+        }
+
+        .slide img {
+            width: 100%;
+            height: 400px;
+            object-fit: contain;
+            border-radius: 10px;
+        }
+
+        .slider-btn {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(0, 0, 0, 0.5);
+            color: #fff;
+            border: none;
+            padding: 10px;
+            cursor: pointer;
+            font-size: 1.5em;
+            z-index: 10;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+        }
+
+        .prev {
+            left: 10px;
+        }
+
+        .next {
+            right: 10px;
+        }
+
+        .slide-counter {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #fff;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 1em;
+            z-index: 10;
+        }
+
+        /* Проект с базой данных (слайдер) */
+        #db-project {
+            padding: 80px 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+            text-align: center;
+            background: #fff;
+        }
+
+        #db-project h2 {
+            font-size: 2.5em;
+            margin-bottom: 40px;
+            color: #333;
+        }
+
+        /* Секция дизайнерских работ (слайдер) */
+        #design-works {
+            padding: 80px 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        #design-works h2 {
+            font-size: 2.5em;
+            margin-bottom: 40px;
+            color: #333;
+        }
+
+        /* Подвал */
+        footer {
+            padding: 40px 20px;
+            background: #333;
+            color: #fff;
+            text-align: center;
+        }
+
+        footer p {
+            margin: 10px 0;
+        }
+
+        footer .contact-info {
+            margin-top: 20px;
+            font-size: 1.1em;
+        }
+
+        /* Адаптивность */
+        @media (max-width: 768px) {
+            nav ul {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            nav ul li {
+                margin: 10px 0;
+            }
+
+            #hero h1 {
+                font-size: 2em;
+            }
+
+            #hero p {
+                font-size: 1em;
+            }
+
+            .slide img {
+                height: 300px;
+            }
+
+            .slider-btn {
+                font-size: 1.2em;
+                padding: 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Шапка -->
+    <header>
+        <nav>
+            <div class="logo">Артем Кияшко</div>
+            <ul>
+                <li><a href="#hero">Главная</a></li>
+                <li><a href="#portfolio">Портфолио</a></li>
+                <li><a href="#db-project">База данных</a></li>
+                <li><a href="#design-works">Дизайн</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <!-- Главная секция -->
+    <section id="hero">
+        <h1>Артем Кияшко</h1>
+        <p>Студент Амурского Педагогического Колледжа, администратор базы данных, дизайнер.</p>
+        <a href="#portfolio" class="btn">Посмотреть работы</a>
+    </section>
+
+    <!-- Секция портфолио (слайдер для грамот) -->
+    <section id="portfolio">
+        <h2>Портфолио</h2>
+        <div class="slider" id="portfolio-slider">
+            <div class="slides">
+                <!-- Грамота 1 -->
+                <div class="slide">
+                    <img src="Грамота 1.png" alt="Грамота 1">
+                </div>
+                <!-- Грамота 2 -->
+                <div class="slide">
+                    <img src="грамота 2.png" alt="Грамота 2">
+                </div>
+                <!-- Грамота 3 -->
+                <div class="slide">
+                    <img src="Грамота 3.png" alt="Грамота 3">
+                </div>
+                <!-- Грамота 4 -->
+                <div class="slide">
+                    <img src="грамота 4.png" alt="Грамота 4">
+                </div>
+                <!-- Грамота 5 -->
+                <div class="slide">
+                    <img src="грамота 5.png" alt="Грамота 5">
+                </div>
+                <!-- Грамота 6 -->
+                <div class="slide">
+                    <img src="грамота 6.png" alt="Грамота 6">
+                </div>
+            </div>
+            <button class="slider-btn prev"></button>
+            <button class="slider-btn next"></button>
+        </div>
+    </section>
+
+    <!-- Проект с базой данных (слайдер) -->
+    <section id="db-project">
+        <h2>Сайт с подключённой базой данных</h2>
+        <div class="slider" id="db-project-slider">
+            <div class="slides">
+                <!-- Скриншот 1 -->
+                <div class="slide">
+                    <img src="БД 1.png" alt="Скриншот проекта с БД 1">
+                </div>
+                <!-- Скриншот 2 -->
+                <div class="slide">
+                    <img src="БД 2.png" alt="Скриншот проекта с БД 2">
+                </div>
+                <!-- Скриншот 3 -->
+                <div class="slide">
+                    <img src="БД 3.png" alt="Скриншот проекта с БД 3">
+                </div>
+                <div class="slide">
+                    <img src="БД 4.png" alt="Скриншот проекта с БД 4">
+                </div>
+                <div class="slide">
+                    <img src="БД 5.png" alt="Скриншот проекта с БД 5">
+                </div>
+                <div class="slide">
+                    <img src="БД 6.png" alt="Скриншот проекта с БД 6">
+                </div>
+                <div class="slide">
+                    <img src="БД 7.png" alt="Скриншот проекта с БД 7">
+                </div>
+                <div class="slide">
+                    <img src="БД 8.png" alt="Скриншот проекта с БД 8">
+                </div>
+                <div class="slide">
+                    <img src="БД 9.png" alt="Скриншот проекта с БД 9">
+                </div>
+                <div class="slide">
+                    <img src="БД 10.png" alt="Скриншот проекта с БД 10">
+                </div>
+                <div class="slide">
+                    <img src="БД 11.png" alt="Скриншот проекта с БД 11">
+                </div>
+            </div>
+            <button class="slider-btn prev"></button>
+            <button class="slider-btn next"></button>
+        </div>
+    </section>
+
+    <!-- Дизайнерские работы (слайдер) -->
+    <section id="design-works">
+        <h2>Мои коммерческие работы в сфере дизайна</h2>
+        <div class="slider" id="design-works-slider">
+            <div class="slides">
+                <!-- Дизайн 1 -->
+                <div class="slide">
+                    <img src="Дизайн 1.jpg" alt="Дизайн 1">
+                    <div class="slide-counter">Дизайн 1</div>
+                </div>
+                <!-- Дизайн 2 -->
+                <div class="slide">
+                    <img src="Дизайн 2.jpg" alt="Дизайн 2">
+                    <div class="slide-counter">Дизайн 2</div>
+                </div>
+                <!-- Дизайн 3 -->
+                <div class="slide">
+                    <img src="Дизайн 3.jpg" alt="Дизайн 3">
+                    <div class="slide-counter">Дизайн 3</div>
+                </div>
+                <!-- Дизайн 4 -->
+                <div class="slide">
+                    <img src="Дизайн 4.jpg" alt="Дизайн 4">
+                    <div class="slide-counter">Дизайн 4</div>
+                </div>
+                <!-- Дизайн 4 -->
+                <div class="slide">
+                    <img src="Дизайн 5.jpg" alt="Дизайн 5">
+                    <div class="slide-counter">Дизайн 5</div>
+                </div>
+                <!-- Дизайн 4 -->
+                <div class="slide">
+                    <img src="Дизайн 6.jpg" alt="Дизайн 6">
+                    <div class="slide-counter">Дизайн 6</div>
+                </div>
+                <!-- Дизайн 4 -->
+                <div class="slide">
+                    <img src="Дизайн 7.jpg" alt="Дизайн 7">
+                    <div class="slide-counter">Дизайн 7</div>
+                </div>
+                <!-- Дизайн 4 -->
+                <div class="slide">
+                    <img src="Дизайн 8.jpg" alt="Дизайн 8">
+                    <div class="slide-counter">Дизайн 8</div>
+                </div>
+                <!-- Дизайн 4 -->
+                <div class="slide">
+                    <img src="Дизайн 9.jpg" alt="Дизайн 9">
+                    <div class="slide-counter">Дизайн 9</div>
+                </div>
+                <!-- Дизайн 4 -->
+                <div class="slide">
+                    <img src="Дизайн 10.jpg" alt="Дизайн 10">
+                    <div class="slide-counter">Дизайн 10</div>
+                </div>
+            </div>
+            <button class="slider-btn prev"></button>
+            <button class="slider-btn next"></button>
+        </div>
+    </section>
+
+    <!-- Подвал -->
+    <footer>
+        <p>© 2025 Артем Кияшко.</p>
+        <div class="contact-info">
+            <p>Email: kiashkoart@gmail.com | Телефон: +79146087579</p>
+        </div>
+    </footer>
+
+    <!-- JavaScript для слайдера -->
+    <script>
+        // Функция для инициализации слайдера
+        function initSlider(slider) {
+            const slides = slider.querySelector('.slides');
+            const totalSlides = slider.querySelectorAll('.slide').length;
+            const prevBtn = slider.querySelector('.prev');
+            const nextBtn = slider.querySelector('.next');
+            let currentIndex = 0;
+
+            // Установка символов для кнопок
+            prevBtn.innerHTML = '❮';
+            nextBtn.innerHTML = '❯';
+
+            // Функция для переключения слайдов
+            function moveSlide(n) {
+                currentIndex += n;
+                if (currentIndex >= totalSlides) currentIndex = 0;
+                if (currentIndex < 0) currentIndex = totalSlides - 1;
+                slides.style.transform = `translateX(-${currentIndex * 100}%)`;
+
+                // Обновление счётчика (если есть)
+                const counters = slider.querySelectorAll('.slide-counter');
+                counters.forEach((counter, i) => {
+                    counter.style.display = (i === currentIndex) ? 'block' : 'none';
+                });
+            }
+
+            // Обработчики событий для кнопок
+            prevBtn.addEventListener('click', () => moveSlide(-1));
+            nextBtn.addEventListener('click', () => moveSlide(1));
+
+            // Инициализация первого слайда
+            moveSlide(0);
+        }
+
+        // Инициализация всех слайдеров
+        const sliders = document.querySelectorAll('.slider');
+        sliders.forEach(slider => initSlider(slider));
+    </script>
+</body>
+</html>
